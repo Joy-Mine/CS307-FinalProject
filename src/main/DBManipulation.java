@@ -13,10 +13,50 @@ public class DBManipulation implements IDatabaseManipulation {
     private Statement statement;
     private Connection connection;
     private ResultSet resultSet;
-    private void startDB(){
+    private void startDB(LogInfo logInfo){
+        String currentUser=logInfo.name(),currentPwd=logInfo.password();
+        try {
+            connection = DriverManager.getConnection(url,root,pwd);
+            connection.setAutoCommit(true);
+            String sql="select type from staff_type where name='"+currentUser+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || resultSet.getString(1)!=logInfo.type().toString()){
+                System.out.println("No such staff.");
+                closeDB();
+                return;
+            }
+            if(logInfo.type().toString()=="Courier")
+                sql="select password from courier where name='"+currentUser+"';";
+            else if(logInfo.type().toString()=="CompanyManager")
+                sql="select password from company_manager where name='"+currentUser+"';";
+            else if(logInfo.type().toString()=="SeaportOfficer")
+                sql="select password from seaport_officer where name='"+currentUser+"';";
+            else if(logInfo.type().toString()=="SustcManager")
+                sql="select password from department_manager where name='"+currentUser+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || resultSet.getString(1)!=currentPwd){
+                System.out.println("No such staff.");
+                closeDB();
+                return;
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
         Properties properties=new Properties();
-        properties.setProperty("user",root);
-        properties.setProperty("password",pwd);
+        if(logInfo.type()== LogInfo.StaffType.Courier){
+            properties.setProperty("user","courier");
+            properties.setProperty("password","123456");
+        }else if(logInfo.type()== LogInfo.StaffType.CompanyManager){
+            properties.setProperty("user","company_manager");
+            properties.setProperty("password","123456");
+        }else if(logInfo.type()== LogInfo.StaffType.SeaportOfficer){
+            properties.setProperty("user","seaport_officer");
+            properties.setProperty("password","123456");
+        }else if(logInfo.type()== LogInfo.StaffType.SustcManager){
+            properties.setProperty("user","department_manager");
+            properties.setProperty("password","123456");
+        }
+
         try {
             connection = DriverManager.getConnection(url,properties);
             connection.setAutoCommit(true);
@@ -38,16 +78,31 @@ public class DBManipulation implements IDatabaseManipulation {
 
 
     public DBManipulation(String database,String root,String pwd){
-        //"localhost:5432/project2","postgres","POST888lbjn"
+        //"localhost:5432/project2"
 //        this.database=database;
         this.root=root;
         this.pwd=pwd;
         this.url="jdbc:postgresql://"+database;
+        try {
+            connection = DriverManager.getConnection(url,root,pwd);
+            connection.setAutoCommit(true);
+            String sql="";//todo:这里的sql要完成建数据库，建表，建数据库用户
+            statement.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
     }
 
     @Override
     public void $import(String recordsCSV, String staffsCSV) {
-
+        try {
+            connection = DriverManager.getConnection(url,root,pwd);
+            connection.setAutoCommit(true);
+            String sql="";//todo:这里的sql要完成导数据。 这个方法内也可以用java集合处理数据再产生sql
+            statement.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
     }
 
     @Override
@@ -55,7 +110,7 @@ public class DBManipulation implements IDatabaseManipulation {
         if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
         }
-        startDB();
+        startDB(log);
         String sql="select count(*) from company;";
         try {
             resultSet=statement.executeQuery(sql);
@@ -73,7 +128,7 @@ public class DBManipulation implements IDatabaseManipulation {
         if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
         }
-        startDB();
+        startDB(log);
         String sql="select count(*) from city;";
         try {
             resultSet=statement.executeQuery(sql);
@@ -91,7 +146,7 @@ public class DBManipulation implements IDatabaseManipulation {
         if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
         }
-        startDB();
+        startDB(log);
         String sql="select count(*) from courier;";
         try {
             resultSet=statement.executeQuery(sql);
@@ -109,7 +164,7 @@ public class DBManipulation implements IDatabaseManipulation {
         if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
         }
-        startDB();
+        startDB(log);
         String sql="select count(*) from ship;";
         try {
             resultSet=statement.executeQuery(sql);
@@ -127,7 +182,7 @@ public class DBManipulation implements IDatabaseManipulation {
         if(log.type()!= LogInfo.StaffType.SustcManager){
             return null;
         }
-        startDB();
+        startDB(log);
         String sql="select * from ItemInfo where name='"+name+"';";
         try {
             resultSet=statement.executeQuery(sql);
