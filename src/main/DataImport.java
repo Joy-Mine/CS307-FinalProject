@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.Set;
 
 public class DataImport {
-
     private static final int BATCH_SIZE = 1000;
     public static void $import(String recordsCSV, String staffsCSV, Connection connection){
 

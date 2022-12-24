@@ -105,7 +105,6 @@ public class DBManipulation implements IDatabaseManipulation {
         } catch (SQLException e) {
             System.out.println(e);
         }
-
         DataImport.$import(recordsCSV,staffsCSV,connection);
         closeDB();
     }
