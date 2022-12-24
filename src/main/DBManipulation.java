@@ -99,7 +99,7 @@ public class DBManipulation implements IDatabaseManipulation {
         try {
             connection = DriverManager.getConnection(url,root,pwd);
             connection.setAutoCommit(true);
-
+            System.out.println(1);
         } catch (SQLException e) {
             System.out.println(e);
         }
@@ -110,8 +110,9 @@ public class DBManipulation implements IDatabaseManipulation {
     //SUSTC department manager
     @Override
     public int getCompanyCount(LogInfo log) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
+        }
         if(!startDB(log))
             return -1;
         String sql="select count(*) from company;";
@@ -128,8 +129,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public int getCityCount(LogInfo log) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
+        }
         if(!startDB(log))
             return -1;
         String sql="select count(*) from city;";
@@ -146,8 +148,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public int getCourierCount(LogInfo log) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
+        }
         if(!startDB(log))
             return -1;
         String sql="select count(*) from courier;";
@@ -164,8 +167,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public int getShipCount(LogInfo log) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return -1;
+        }
         if(!startDB(log))
             return -1;
         String sql="select count(*) from ship;";
@@ -182,8 +186,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public ItemInfo getItemInfo(LogInfo log, String name) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return null;
+        }
         if(!startDB(log))
             return null;
         String sql="select * from item_info where name='"+name+"';";
@@ -245,7 +250,6 @@ public class DBManipulation implements IDatabaseManipulation {
 
             ItemInfo item=new ItemInfo(resultSet.getString(1),resultSet.getString(2),resultSet.getDouble(3),
                     state,retrievalInfo,deliveryInfo,importInfo,exportInfo);
-            closeDB();
             return item;
         } catch (SQLException e) {
             System.out.println(e);
@@ -255,8 +259,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public ShipInfo getShipInfo(LogInfo log, String name) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return null;
+        }
         if(!startDB(log))
             return null;
         String sql="select * from ship where ship_name='"+name+"';";
@@ -266,7 +271,6 @@ public class DBManipulation implements IDatabaseManipulation {
                 closeDB();
                 return null;
             }
-            closeDB();
             return new ShipInfo(resultSet.getString(1),resultSet.getString(2),resultSet.getBoolean(3));
         } catch (SQLException e) {
             System.out.println(e);
@@ -276,8 +280,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public ContainerInfo getContainerInfo(LogInfo log, String code) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return null;
+        }
         if(!startDB(log))
             return null;
         String sql="select * from container where code='"+code+"';";
@@ -307,7 +312,6 @@ public class DBManipulation implements IDatabaseManipulation {
                 default:
                     type=null;
             }
-            closeDB();
             return new ContainerInfo(type,resultSet.getString(1),resultSet.getBoolean(3));
         } catch (SQLException e) {
             System.out.println(e);
@@ -317,8 +321,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public StaffInfo getStaffInfo(LogInfo log, String name) {
-        if(log.type()!= LogInfo.StaffType.SustcManager)
+        if(log.type()!= LogInfo.StaffType.SustcManager){
             return null;
+        }
         if(!startDB(log))
             return null;
         String sql="select * from staff_type where name='"+name+"';";
@@ -334,7 +339,6 @@ public class DBManipulation implements IDatabaseManipulation {
 //                    table = "courier";
                     sql="select * from courier where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
-                    closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.Courier,resultSet.getString(7))
                             ,resultSet.getString(2),resultSet.getString(3),resultSet.getBoolean(4)
                             ,resultSet.getInt(5),resultSet.getString(6));
@@ -342,7 +346,6 @@ public class DBManipulation implements IDatabaseManipulation {
 //                    table="company_manager";
                     sql="select * from company_manager where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
-                    closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.CompanyManager,resultSet.getString(6))
                             ,resultSet.getString(2),"",resultSet.getBoolean(3)
                             ,resultSet.getInt(4),resultSet.getString(5));
@@ -350,7 +353,6 @@ public class DBManipulation implements IDatabaseManipulation {
 //                    table="seaport_officer";
                     sql="select * from seaport_officer where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
-                    closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.SeaportOfficer,resultSet.getString(6))
                             ,"",resultSet.getString(2),resultSet.getBoolean(3)
                             ,resultSet.getInt(4),resultSet.getString(5));
@@ -358,12 +360,10 @@ public class DBManipulation implements IDatabaseManipulation {
 //                    table="department_manager";
                     sql="select * from department_manager where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
-                    closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.SustcManager,resultSet.getString(5))
                             ,"","",resultSet.getBoolean(2)
                             ,resultSet.getInt(3),resultSet.getString(4));
             }
-            closeDB();
             return null;
         } catch (SQLException e) {
             System.out.println(e);
@@ -375,15 +375,19 @@ public class DBManipulation implements IDatabaseManipulation {
     //courier
     @Override
     public boolean newItem(LogInfo log, ItemInfo item) {//todo: 什么时候return false，还很不确定
-        if(log.type()!= LogInfo.StaffType.Courier)
-            return false;
-        if(!startDB(log))
-            return false;
-        //要判断的情况：Item是否已存在；登录的这位快递员是否在这个城市，import tax和export tax跟城市有没有对上
-        if(item.retrieval().city()==item.delivery().city() || item.$import().city()==item.export().city() || log.name()!=item.retrieval().courier()) {
+        if(log.type()!= LogInfo.StaffType.Courier){
             closeDB();
             return false;
         }
+        if(!startDB(log)) {
+            closeDB();
+            return false;
+        }
+        if(item.retrieval().city()==item.delivery().city() || item.$import().city()==item.export().city()) {
+            closeDB();
+            return false;
+        }
+        String courierCity="";
         String sql="select city from courier where name='"+item.retrieval().courier()+"';";
         try {
             resultSet=statement.executeQuery(sql);
@@ -391,120 +395,46 @@ public class DBManipulation implements IDatabaseManipulation {
                 closeDB();
                 return false;
             }
-            String courierCity=resultSet.getString(1);
+            courierCity=resultSet.getString(1);
             if(courierCity!=item.retrieval().city()) {
                 closeDB();
                 return false;
             }
-            String sql1="select tax_rate from tax_rate where city_name=='"+item.$import().city()+"' and item_class=='"+item.$class()+"'; ";
-            String sql2="select tax_rate from tax_rate where city_name=='"+item.export().city()+"' and item_class=='"+item.$class()+"'; ";
-            resultSet=statement.executeQuery(sql1);
-            if(!resultSet.next()){
-                closeDB();
-                return false;
-            }
-            Double importTaxRate=resultSet.getDouble(1);
-            resultSet=statement.executeQuery(sql2);
-            if(!resultSet.next()){
-                closeDB();
-                return false;
-            }
-            Double exportTaxRate=resultSet.getDouble(1);
-            if(importTaxRate!=(item.$import().tax()/item.price()) || exportTaxRate!=(item.export().tax()/item.price())){
-                closeDB();
-                return false;
-            }
-            sql="select company from courier where name='"+item.retrieval().courier()+"';";
-            resultSet=statement.executeQuery(sql);
-            if(!resultSet.next()){
-                closeDB();
-                return false;
-            }
-            String company=resultSet.getString(1);
             //todo:这个sql太长了，回头再来写
-            sql="insert into item_info " +
-                    "(name, class, price, state, retrieval_courier, retrieval_city, delivery_city, delivery_courier, import_city, import_officer, import_tax, export_city, export_officer, export_tax, ship, container_code, company)" +
-                    "values ('"+item.name()+"','"+item.$class()+"',"+item.price()+",'PickingUp','"+item.retrieval().city()+"','"+item.retrieval().courier()+"','"+item.delivery().city()+"','"+item.delivery().courier()+"','"+item.$import().city()+"','"+item.$import().officer()+"',"+item.$import().tax()+",'"+item.export().city()+"','"+item.export().officer()+"',"+item.export().tax()+",' ',' ','"+company+"');";
+            sql="insert into item_info (name,class,price,state,retrieval_city,retrieval_courier,delivery_city,delivery_courier,import_city,import_officer,import_tax,export_city,export_officer,export_tax,ship,container_code,company) " +
+                    "values ('"+item.name()+"','"+item.$class()+"',"+item.price()+",'PickingUp',"+item.retrieval().city()+"'"+item.retrieval().courier()+");";
             statement.execute(sql);
-            closeDB();
-            return true;
-        } catch (SQLException e) {
-            System.out.println(e);
-            closeDB();
-            return false;
-        }
-    }
-    @Override
-    public boolean setItemState(LogInfo log, String name, ItemState s) {
-        if(log.type()!=LogInfo.StaffType.Courier)
-            return false;
-        if(!startDB(log))
-            return false;
-        String sql="select * from item_info where name='"+name+"';";
-        try {
-            resultSet=statement.executeQuery(sql);
-            if(!resultSet.next()){
-                closeDB();
-                return false;
-            }
-            String currentState=resultSet.getString(4);
-            if(log.name()==resultSet.getString(6)){//retrieval_courier, state最多是“ExportChecking”
-                switch (currentState){
-                    case "PickingUp":
-                        if(s==ItemState.ToExportTransporting){
-                            sql="update item_info set state='ToExportTransporting' where name='name';";
-                            statement.execute(sql);
-                            closeDB();
-                            return true;
-                        }else {
-                            closeDB();
-                            return false;
-                        }
-                    case "ToExportTransporting":
-                        if(s==ItemState.ExportChecking){
-                            sql="update item_info set state='ExportChecking' where name='name';";
-                            statement.execute(sql);
-                            closeDB();
-                            return true;
-                        }else {
-                            closeDB();
-                            return false;
-                        }
-                }
-            }
-            else if (log.name()==resultSet.getString(8)){//delivery_courier
-                if(currentState=="FromImportTransporting")
-                    if (s == ItemState.Delivering && s != ItemState.Finish) {
-                        sql="update item_info set state='"+s+"' where name='name';";
-                        statement.execute(sql);
-                        closeDB();
-                        return true;
-                    }else {
-                        closeDB();
-                        return false;
-                    }
-            }
-            else if(currentState.equals("FromImportTransporting") && resultSet.getString(8).equals("")){//todo:ItemState为FromImportTransporting 且 delivery courier为空的情况
-                sql="select city from courier where name='"+log.name()+"';";
-                ResultSet courierResultSet=statement.executeQuery(sql);
-                if(!courierResultSet.next()){
-                    closeDB();
-                    return false;
-                }
-                if(courierResultSet.getString(1).equals(resultSet.getString(7))){//当前登录的courier跟item的delivery_city在同一个城市就好
-                    sql="update item_info set delivery_courier='"+log.name()+"' where name='"+name+"';";
-                    statement.execute(sql);
-                    closeDB();
-                    return true;
-                }
-            }
+
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
             return false;
         }
 
-        closeDB();
+        return false;
+    }
+    @Override
+    public boolean setItemState(LogInfo log, String name, ItemState s) {
+        if(log.type()!=LogInfo.StaffType.Courier){
+            closeDB();
+            return false;
+        }
+        if(!startDB(log)){
+            closeDB();
+            return false;
+        }
+        String courierType="";
+        String sql="select from staff_type where name='"+name+"';";
+        if(courierType=="")
+        try {
+            resultSet=statement.executeQuery(sql);
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
+
+
         return false;
     }
 
