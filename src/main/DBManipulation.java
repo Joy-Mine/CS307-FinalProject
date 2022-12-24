@@ -100,11 +100,14 @@ public class DBManipulation implements IDatabaseManipulation {
         try {
             connection = DriverManager.getConnection(url,root,pwd);
             connection.setAutoCommit(true);
-            String sql="";//todo:这里的sql要完成导数据。 这个方法内也可以用java集合处理数据再产生sql
-            statement.execute(sql);
+//            String sql="";//todo:这里的sql要完成导数据。 这个方法内也可以用java集合处理数据再产生sql
+//            statement.execute(sql);
         } catch (SQLException e) {
             System.out.println(e);
         }
+
+        DataImport.$import(recordsCSV,staffsCSV,connection);
+        closeDB();
     }
 
     //SUSTC department manager
