@@ -18,6 +18,7 @@ public class DBManipulation implements IDatabaseManipulation {
         try {
             connection = DriverManager.getConnection(url,root,pwd);
             connection.setAutoCommit(true);
+            statement=connection.createStatement();
             String sql="select type from staff_type where name='"+currentUser+"';";
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next() || resultSet.getString(1)!=logInfo.type().toString()){
@@ -80,16 +81,14 @@ public class DBManipulation implements IDatabaseManipulation {
 
 
     public DBManipulation(String database,String root,String pwd){
-        //"localhost:5432/project2"
-//        this.database=database;
         this.root=root;
         this.pwd=pwd;
         this.url="jdbc:postgresql://"+database;
         try {
             connection = DriverManager.getConnection(url,root,pwd);
             connection.setAutoCommit(true);
-            String sql="";//todo:这里的sql要完成建数据库，建表，建数据库用户,给用户赋权限
-            statement.execute(sql);
+            CreateDatabase.create(connection);//todo:建数据库，建四种数据库user，建表
+
         } catch (SQLException e) {
             System.out.println(e);
         }
@@ -100,8 +99,7 @@ public class DBManipulation implements IDatabaseManipulation {
         try {
             connection = DriverManager.getConnection(url,root,pwd);
             connection.setAutoCommit(true);
-//            String sql="";//todo:这里的sql要完成导数据。 这个方法内也可以用java集合处理数据再产生sql
-//            statement.execute(sql);
+
         } catch (SQLException e) {
             System.out.println(e);
         }

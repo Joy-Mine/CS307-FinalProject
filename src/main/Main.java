@@ -5,6 +5,6 @@ import main.interfaces.LogInfo;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println(ItemState.Finish.toString());
+        //此方法没用；可用于调试代码
     }
 }
