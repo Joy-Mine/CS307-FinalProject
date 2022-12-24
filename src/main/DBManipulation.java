@@ -509,32 +509,205 @@ public class DBManipulation implements IDatabaseManipulation {
     //company manager
     @Override
     public double getImportTaxRate(LogInfo log, String city, String itemClass) {
-
-        return 0;
+        if(log.type()!=LogInfo.StaffType.CompanyManager)
+            return -1;
+        if(!startDB(log))
+            return -1;
+        String sql="select import_tax_rate from tax_rate where city_name='"+city+"' and item_class='"+itemClass+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return -1;
+            }
+//            closeDB();
+            return resultSet.getDouble(1);
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return -1;
+        }
     }
     @Override
     public double getExportTaxRate(LogInfo log, String city, String itemClass) {
-        return 0;
+        if(log.type()!=LogInfo.StaffType.CompanyManager)
+            return -1;
+        if(!startDB(log))
+            return -1;
+        String sql="select export_tax_rate from tax_rate where city_name='"+city+"' and item_class='"+itemClass+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return -1;
+            }
+//            closeDB();
+            return resultSet.getDouble(1);
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return -1;
+        }
     }
     @Override
     public boolean loadItemToContainer(LogInfo log, String itemName, String containerCode) {
-        return false;
+        if(log.type()!=LogInfo.StaffType.CompanyManager)
+            return false;
+        if(!startDB(log))
+            return false;
+        String sql="select state from item_info where name='"+itemName+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            String state=resultSet.getString(1);
+            //false情况：state不是PackingToContainer；container已经满了；container已经上船了
+            if(state!="PackingToContainer"){
+                closeDB();
+                return false;
+            }
+            sql="select * from container where code='"+containerCode+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(resultSet.getBoolean(3) || resultSet.getBoolean(4)){
+                closeDB();
+                return false;
+            }
+            String containerType=resultSet.getString(2);
+            sql="update item_info set container_code='"+containerCode+"' where name='"+itemName+"';";
+            statement.execute(sql);
+            closeDB();
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
     }
     @Override
     public boolean loadContainerToShip(LogInfo log, String shipName, String containerCode) {
-        return false;
+        if(log.type()!=LogInfo.StaffType.CompanyManager)
+            return false;
+        if(!startDB(log))
+            return false;
+        //false情况：container已经上船了；船已经开走了
+        String sql="select * from container where code='"+containerCode+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(resultSet.getBoolean(4)){
+                closeDB();
+                return false;
+            }
+            sql="select sailing from ship where ship_name='"+shipName+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(resultSet.getBoolean(3)){
+                closeDB();
+                return false;
+            }
+            sql="update item_info set state='WaitingForShipping',ship='"+shipName+"' where container_code='code';" +
+                    "update container set loaded=true;";//todo:此时item的state应该是PackingToContainer吧
+            statement.execute(sql);
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
     }
     @Override
     public boolean shipStartSailing(LogInfo log, String shipName) {
-        return false;
+        if(log.type()!=LogInfo.StaffType.CompanyManager)
+            return false;
+        if(!startDB(log))
+            return false;
+        //false情况：船已经开走了
+        String sql="select sailing from ship where ship_name='"+shipName+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(resultSet.getBoolean(1)){
+                closeDB();
+                return false;
+            }
+            sql="update item_info set state='Shipping' where ship='"+shipName+"';" +
+                    "update ship set sailing=true;";
+            statement.execute(sql);
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
     }
     @Override
     public boolean unloadItem(LogInfo log, String itemName) {
-        return false;
+        if(log.type()!=LogInfo.StaffType.CompanyManager)
+            return false;
+        if(!startDB(log))
+            return false;
+        //false情况：item的state不对
+        String sql="select state from item_info where name='"+itemName+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(resultSet.getString(1)!="Shipping"){
+                closeDB();
+                return false;
+            }
+            sql="update item_info set state='UnpackingFromContainer' where name='"+itemName+"';";//todo:暂时只修改了item的state，应该没问题吧。
+            statement.execute(sql);
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
     }
     @Override
     public boolean itemWaitForChecking(LogInfo log, String item) {
-        return false;
+        if(log.type()!=LogInfo.StaffType.CompanyManager)
+            return false;
+        if(!startDB(log))
+            return false;
+        //false情况：item的state不对
+        String sql="select state from item_info where name='"+item+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(resultSet.getString(1)!="UnpackingFromContainer"){
+                closeDB();
+                return false;
+            }
+            sql="update item_info set state='ImportChecking' where name='"+item+"';";//todo:暂时只修改了item的state，应该没问题吧。
+            statement.execute(sql);
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
     }
 
 
