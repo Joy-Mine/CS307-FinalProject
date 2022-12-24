@@ -3,6 +3,7 @@ package main;
 import main.interfaces.*;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Properties;
 
 public class DBManipulation implements IDatabaseManipulation {
@@ -710,15 +711,78 @@ public class DBManipulation implements IDatabaseManipulation {
         }
     }
 
-
     //seaport officer
     @Override
     public String[] getAllItemsAtPort(LogInfo log) {
-        return new String[0];
+        if(log.type()!=LogInfo.StaffType.SeaportOfficer)
+            return null;
+        if(!startDB(log))
+            return null;
+        //false情况：item的state不对
+        ArrayList<String> ans=new ArrayList<>();
+        String sql="select city from seaport_officer where name='"+log.name()+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return null;
+            }
+            String city=resultSet.getString(1);
+            sql="select name from item_info where state='ExportChecking' and delivery_city='"+city+"';";
+            resultSet=statement.executeQuery(sql);
+            while(resultSet.next())
+                    ans.add(resultSet.getString(1));
+            sql="select name from item_info where state='ImportChecking' and delivery_city='"+city+"';";
+            resultSet=statement.executeQuery(sql);
+            while(resultSet.next())
+                ans.add(resultSet.getString(1));
+            return ans.toArray(new String[ans.size()]);
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return null;
+        }
     }
-
     @Override
     public boolean setItemCheckState(LogInfo log, String itemName, boolean success) {
-        return false;
+        if(log.type()!=LogInfo.StaffType.SeaportOfficer)
+            return false;
+        if(!startDB(log))
+            return false;
+        //false情况：item的state不对或item不存在;item不在当前log的城市
+        String sql="select city from seaport_officer where name='"+log.name()+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            String city=resultSet.getString(1);
+            sql="select state,export_city,import_city from item_info where name='"+itemName+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(resultSet.getString(1).equals("ExportChecking") && resultSet.getString(2).equals(city)){
+                if(success)
+                    sql="update item_info set state='PackingToContainer',container_code='' where name='"+itemName+"';";
+                else sql="update item_info set state='ExportCheckFailed' where name='"+itemName+"';";
+                statement.execute(sql);
+                return true;
+            }
+            if(resultSet.getString(1).equals("ImportChecking") && resultSet.getString(3).equals(city)){
+                if(success)
+                    sql="update item_info set state='FromImportTransporting',delivery_courier='' where name='"+itemName+"';";
+                else sql="update item_info set state='ImportCheckFailed' where name='"+itemName+"';";
+                statement.execute(sql);
+                return true;
+            }
+            return false;
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
     }
 }
