@@ -14,16 +14,17 @@ public class CreateDatabase {
 
 
 
-        ps=connection.prepareStatement("CREATE DATABASE  project2");
-        ps.executeUpdate();//执行sql语句
+        /*ps=connection.prepareStatement("CREATE DATABASE  project2");
+        ps.executeUpdate();//执行sql语句*/
 
-        ps=connection.prepareStatement("CREATE USER courier WITH PASSWORD '123456'");
+        ps=connection.prepareStatement("CREATE USER courier WITH PASSWORD '123456' ");
         ps.executeUpdate();
         ps=connection.prepareStatement("CREATE USER company_manager WITH PASSWORD '123456'");
         ps.executeUpdate();
         ps=connection.prepareStatement("CREATE USER seaport_officer WITH PASSWORD '123456'");
         ps.executeUpdate();
-        ps=connection.prepareStatement("CREATE USER department_manager WITH PASSWORD '123456'");
+        ps=connection.prepareStatement("CREATE USER department_manager PASSWORD '123456'\n" +
+                "SUPERUSER  ;");
         ps.executeUpdate();
         /*ps=connection.prepareStatement("SHOW TABLES LIKE \"student\"");
         rs=ps.executeQuery();
@@ -73,7 +74,8 @@ public class CreateDatabase {
                 create table if not exists tax_rate(
                     city_name text not null,
                     item_class text not null,
-                    tax_rate numeric,
+                    import_tax_rate numeric,
+                    export_tax_rate numeric,
                     primary key (city_name,item_class),
                     constraint Export_officer_FK
                         foreign key (city_name)

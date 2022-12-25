@@ -3,12 +3,14 @@ package main;
 import main.interfaces.*;
 
 import java.sql.*;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Properties;
 
 public class DBManipulation implements IDatabaseManipulation {
 
-//    private String database;
+    //    private String database;
     private String root,pwd;
     private String url;
     private Connection connection;
@@ -22,21 +24,24 @@ public class DBManipulation implements IDatabaseManipulation {
             statement=connection.createStatement();
             String sql="select type from staff_type where name='"+currentUser+"';";
             resultSet=statement.executeQuery(sql);
-            if(!resultSet.next() || resultSet.getString(1)!=logInfo.type().toString()){
+            /*System.out.println(!resultSet.next());
+            System.out.println(resultSet.getString("type"));
+            System.out.println(logInfo.type());*/
+            if(!resultSet.next() || !Objects.equals(resultSet.getString("type"), logInfo.type().toString())){
                 System.out.println("No such staff.");
                 closeDB();
                 return false;
             }
-            if(logInfo.type().toString()=="Courier")
+            if(Objects.equals(logInfo.type().toString(), "Courier"))
                 sql="select password from courier where name='"+currentUser+"';";
-            else if(logInfo.type().toString()=="CompanyManager")
+            else if(Objects.equals(logInfo.type().toString(), "CompanyManager"))
                 sql="select password from company_manager where name='"+currentUser+"';";
-            else if(logInfo.type().toString()=="SeaportOfficer")
+            else if(Objects.equals(logInfo.type().toString(), "SeaportOfficer"))
                 sql="select password from seaport_officer where name='"+currentUser+"';";
-            else if(logInfo.type().toString()=="SustcManager")
+            else if(Objects.equals(logInfo.type().toString(), "SustcManager"))
                 sql="select password from department_manager where name='"+currentUser+"';";
             resultSet=statement.executeQuery(sql);
-            if(!resultSet.next() || resultSet.getString(1)!=currentPwd){
+            if(!resultSet.next() || !Objects.equals(resultSet.getString(1), currentPwd)){
                 System.out.println("Wrong password.");
                 closeDB();
                 return false;
@@ -72,9 +77,9 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     private void closeDB(){
         try {
-            statement.close();
+            //statement.close();
             connection.close();
-            resultSet.close();
+            //resultSet.close();
         } catch (SQLException e) {
             System.out.println(e);
         }
@@ -96,7 +101,7 @@ public class DBManipulation implements IDatabaseManipulation {
     }
 
     @Override
-    public void $import(String recordsCSV, String staffsCSV) {
+    public void $import(String recordsCSV, String staffsCSV) throws ParseException {
         try {
             connection = DriverManager.getConnection(url,root,pwd);
             connection.setAutoCommit(true);
@@ -120,6 +125,7 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
+            System.out.println(resultSet.getInt(1));
             return resultSet.getInt(1);
         } catch (SQLException e) {
             System.out.println(e);
@@ -138,7 +144,8 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
-            return resultSet.getInt(1);
+            System.out.println(resultSet.getInt("count"));
+            return resultSet.getInt("count");
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
@@ -156,7 +163,7 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
-            return resultSet.getInt(1);
+            return resultSet.getInt(1)-1;
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
@@ -174,7 +181,7 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
-            return resultSet.getInt(1);
+            return resultSet.getInt(1)-1;
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
@@ -199,7 +206,7 @@ public class DBManipulation implements IDatabaseManipulation {
             ItemInfo.RetrievalDeliveryInfo deliveryInfo;
             ItemInfo.ImportExportInfo importInfo;
             ItemInfo.ImportExportInfo exportInfo;
-            switch (resultSet.getString(4)){
+            switch (resultSet.getString("state")){
                 case "PickingUp":
                     state=ItemState.PickingUp;
                     break;
@@ -236,10 +243,13 @@ public class DBManipulation implements IDatabaseManipulation {
                 case "Delivering":
                     state=ItemState.Delivering;
                     break;
+                case "Finish":
+                    state=ItemState.Finish;
+                    break;
                 default:
                     state=null;
             }
-            retrievalInfo=new ItemInfo.RetrievalDeliveryInfo(resultSet.getString(5),resultSet.getString(6));
+            retrievalInfo=new ItemInfo.RetrievalDeliveryInfo(resultSet.getString(6),resultSet.getString(5));
             deliveryInfo=new ItemInfo.RetrievalDeliveryInfo(resultSet.getString(7),resultSet.getString(8));
             importInfo=new ItemInfo.ImportExportInfo(resultSet.getString(9),resultSet.getString(10),resultSet.getDouble(11));
             exportInfo=new ItemInfo.ImportExportInfo(resultSet.getString(12),resultSet.getString(13),resultSet.getDouble(14));
@@ -731,7 +741,7 @@ public class DBManipulation implements IDatabaseManipulation {
             sql="select name from item_info where state='ExportChecking' and delivery_city='"+city+"';";
             resultSet=statement.executeQuery(sql);
             while(resultSet.next())
-                    ans.add(resultSet.getString(1));
+                ans.add(resultSet.getString(1));
             sql="select name from item_info where state='ImportChecking' and delivery_city='"+city+"';";
             resultSet=statement.executeQuery(sql);
             while(resultSet.next())
