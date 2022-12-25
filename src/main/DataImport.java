@@ -14,13 +14,14 @@ import java.util.Set;
 
 public class DataImport {
     private static final int BATCH_SIZE = 1000;
-    public static void $import(String recordsCSV, String staffsCSV, Connection connection){
+    public static void $import(String recordsCSV, String staffsCSV, Connection connection) throws ParseException {
 
         String line;
         Set<String> staff_name = new HashSet<>();//primary key of staff_type
         Set<String> city = new HashSet<>();//primary key of city
         Set<String> company = new HashSet<>();//primary key of company
         Set<String> ship_name = new HashSet<>();//primary key of ship
+        Set<String> ship_sailing = new HashSet<>();//primary key of ship
         Set<String> container_code = new HashSet<>();//primary key of container
         Set<String> courier_name = new HashSet<>();//primary key of courier
         Set<String> company_manager_name = new HashSet<>();//primary key of company_manager
@@ -40,9 +41,15 @@ public class DataImport {
         ArrayList<seaport_officer> seaport_officer_list = new ArrayList<>();
         ArrayList<department_manager> department_manager_list = new ArrayList<>();
         ArrayList<item_info> item_info_list = new ArrayList<>();
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(recordsCSV))) {
-            bufferedReader.readLine();
-            while ((line = bufferedReader.readLine()) != null) {
+        String [] line_array = recordsCSV.split("\n");
+        int i = 0;
+            while (line_array[i] != null) {
+                i++;
+                if(i==line_array.length){
+                    break;
+                }
+                line = line_array[i];
+
                 String[] info = line.split(",");
                 if (!item_name.contains(info[0])) {
                     item_name.add(info[0]);
@@ -80,24 +87,44 @@ public class DataImport {
                 }
                 if ((!city_name_tax.contains(info[7]))||(!city_name_tax.contains(info[8]))) {
                     if(!item_class.contains((info[1]))){
-                        city_name_tax.add(info[13]);
-                        item_class.add(info[1]);
-                        tax_rate_list.add(new tax_rate(info));}
+                        if(!item_class.contains((info[7]))){
+                            city_name_tax.add(info[7]);
+                            item_class.add(info[1]);
+                            tax_rate_list.add(new tax_rate(info,info[7]));
+                        }
+                        if(!item_class.contains((info[8]))){
+                            city_name_tax.add(info[7]);
+                            item_class.add(info[1]);
+                            tax_rate_list.add(new tax_rate(info,info[8]));
+                        }
+                    }
                 }
                 else if ((city_name_tax.contains(info[7]))&&(city_name_tax.contains(info[8]))){
                     if(!item_class.contains((info[1]))){
-                        city_name_tax.add(info[13]);
-                        item_class.add(info[1]);
-                        tax_rate_list.add(new tax_rate(info));}
+                        if(!item_class.contains((info[7]))){
+                            city_name_tax.add(info[7]);
+                            item_class.add(info[1]);
+                            tax_rate_list.add(new tax_rate(info,info[7]));
+                        }
+                        if(!item_class.contains((info[8]))){
+                            city_name_tax.add(info[7]);
+                            item_class.add(info[1]);
+                            tax_rate_list.add(new tax_rate(info,info[8]));
+                        }}
                 }
             }
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(staffsCSV))) {
-            bufferedReader.readLine();
-            while ((line = bufferedReader.readLine()) != null) {
+
+
+            line_array = staffsCSV.split("\n");
+            int j = 0;
+            while (line_array[j] != null) {
+                j++;
+                if(j==line_array.length){
+                    break;
+                }
+                line = line_array[j];
+
                 String[] info = line.split(",");
                 if (!staff_name.contains(info[0])) {
                     staff_name.add(info[0]);
@@ -107,27 +134,27 @@ public class DataImport {
                     courier_name.add(info[0]);
                     courier_list.add(new courier(info));
                 }
-                if (!company_manager_name.contains(info[0])&&(Objects.equals(info[1], "CompanyManager"))) {                //delivery courier
+                if (!company_manager_name.contains(info[0])&&(Objects.equals(info[1], "Company Manager"))) {                //delivery courier
                     company_manager_name.add(info[0]);
                     company_manager_list.add(new company_manager(info));
                 }
-                if (!seaport_officer_name.contains(info[0])&&(Objects.equals(info[1], "SeaportOfficer"))) {                //delivery courier
+                if (!seaport_officer_name.contains(info[0])&&(Objects.equals(info[1], "Seaport Officer"))) {                //delivery courier
                     seaport_officer_name.add(info[0]);
                     seaport_officer_list.add(new seaport_officer(info));
                 }
-                if (!department_manager_name.contains(info[0])&&(Objects.equals(info[1], "SustcManager"))) {                //delivery courier
+                if (!department_manager_name.contains(info[0])&&(Objects.equals(info[1], "SUSTC Department Manager"))) {                //delivery courier
                     department_manager_name.add(info[0]);
                     department_manager_list.add(new department_manager(info));
                 }
             }
 
-        } catch (IOException | ParseException e) {
-            throw new RuntimeException(e);
-        }
 
 
+
+        staff_type_list.add(new staff_type());
         String sql = "insert into staff_type (name,type) values (?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (staff_type staff_type : staff_type_list) {
@@ -143,6 +170,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -155,6 +183,7 @@ public class DataImport {
 
         sql = "insert into city (name) values (?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (city city1 : city_list) {
@@ -169,6 +198,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -183,6 +213,7 @@ public class DataImport {
 
         sql = "insert into company (name) values (?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (company company1 : company_list) {
@@ -197,6 +228,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -209,6 +241,7 @@ public class DataImport {
 
         sql = "insert into ship (ship_name,company_name,sailing) values (?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (ship ship : ship_list) {
@@ -224,6 +257,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -234,8 +268,9 @@ public class DataImport {
             }
         }
 
-        sql = "insert into container (code,type,full,loaded) values (?,?,?,?)";
+        sql = "insert into container (code,type,isfull,loaded) values (?,?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (container container : container_list) {
@@ -252,6 +287,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -262,14 +298,16 @@ public class DataImport {
             }
         }
 
-        sql = "insert into tax_rate (city_name,item_class,tax_rate) values (?,?,?)";
+        sql = "insert into tax_rate (city_name,item_class,import_tax_rate,export_tax_rate) values (?,?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (tax_rate tax_rate : tax_rate_list) {
                 preparedStatement.setString(1, tax_rate.city_name);
                 preparedStatement.setString(2, tax_rate.item_class);
-                preparedStatement.setFloat(3, tax_rate.tax_rate);
+                preparedStatement.setFloat(3, tax_rate.import_tax_rate);
+                preparedStatement.setFloat(4, tax_rate.export_tax_rate);
 
                 preparedStatement.addBatch();
                 if (++cnt % BATCH_SIZE == 0) {
@@ -280,6 +318,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -290,8 +329,10 @@ public class DataImport {
             }
         }
 
+        courier_list.add(new courier());
         sql = "insert into courier (name,company,city,gender,age,phone,password) values (?,?,?,?,?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (courier courier : courier_list) {
@@ -312,6 +353,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -324,6 +366,7 @@ public class DataImport {
 
         sql = "insert into company_manager (name,company,gender,age,phone,password) values (?,?,?,?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (company_manager company_manager : company_manager_list) {
@@ -343,6 +386,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -353,8 +397,10 @@ public class DataImport {
             }
         }
 
+        seaport_officer_list.add(new seaport_officer());
         sql = "insert into seaport_officer (name,city,gender,age,phone,password) values (?,?,?,?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (seaport_officer seaport_officer : seaport_officer_list) {
@@ -374,6 +420,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -386,6 +433,7 @@ public class DataImport {
 
         sql = "insert into department_manager (name,gender,age,phone,password) values (?,?,?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (department_manager department_manager : department_manager_list) {
@@ -404,6 +452,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -416,6 +465,7 @@ public class DataImport {
 
         sql = "insert into item_info (name,class,price,state,retrieval_courier,retrieval_city,delivery_city,delivery_courier,import_city,import_officer,import_tax,export_city,export_officer,export_tax,ship,container_code,company) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
+            connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
             for (item_info item_info : item_info_list) {
@@ -446,6 +496,7 @@ public class DataImport {
             }
             if (cnt % BATCH_SIZE != 0)
                 preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
             connection.commit();
         } catch (SQLException se) {
             System.err.println("SQL error: " + se.getMessage());
@@ -463,7 +514,22 @@ public class DataImport {
         public String type;
         public staff_type(String[] info) throws ParseException {
             name = info[0];
-            type = info[1];
+            if(Objects.equals(info[1], "Courier")){
+                type = "Courier";
+            }
+            else if (Objects.equals(info[1], "Company Manager")){
+                type = "CompanyManager";
+            }
+            else if (Objects.equals(info[1], "Seaport Officer")){
+                type = "SeaportOfficer";
+            }
+            else if (Objects.equals(info[1], "SUSTC Department Manager")){
+                type = "SustcManager";
+            }
+        }
+        public staff_type(){
+            name = "";
+            type = "";
         }
     }
 
@@ -490,9 +556,16 @@ public class DataImport {
         public boolean sailing;
 
         public ship(String[] info) {
+            if (info[15]=="e63efe60"){
+                sailing = true;
+            }
+            else {
+                sailing = Objects.equals(info[17], "Shipping");
+            }
             name=info[15];
             company_name = info[16];
-            sailing = false;
+
+
         }
     }
 
@@ -504,7 +577,29 @@ public class DataImport {
 
         public container(String[] info) {
             code=info[13];
-            type=info[14];
+            switch (info[14]){
+                case "Dry Container":
+                    type = "Dry";
+                    break;
+                case "Flat Rack Container":
+                    type = "FlatRack";
+                    break;
+                case "ISO Tank Container":
+                    type = "ISOTank";
+                    break;
+                case "Open Top Container":
+                    type = "OpenTop";
+                    break;
+                case "Reefer Container":
+                    type = "Reefer";
+                    break;
+                case "":
+                    type = "";
+                    break;
+                default:
+                    break;
+            }
+
             full = false;
             loaded = false;
         }
@@ -513,13 +608,16 @@ public class DataImport {
     class tax_rate{
         public String city_name;
         public String item_class;
-        public float tax_rate;
+        public float import_tax_rate;
 
-        public tax_rate(String[] info) {
+        public float export_tax_rate;
 
-            city_name=info[24];
-            item_class=info[23];
-            tax_rate=0;
+        public tax_rate(String[] info,String info1) {
+
+            city_name=info1;
+            item_class=info[1];
+            import_tax_rate = Float.parseFloat(info[10])/Float.parseFloat(info[2]);
+            export_tax_rate = Float.parseFloat(info[9])/Float.parseFloat(info[2]);
         }
     }
 
@@ -540,6 +638,16 @@ public class DataImport {
             age = Integer.parseInt(info[5]);
             phone = info[6];
             password = info[7];
+
+        }
+        public courier() {
+            name = "";
+            company = "";
+            city = "";
+            gender = false;
+            age = 0;
+            phone = "";
+            password = "";
 
         }
     }
@@ -577,6 +685,14 @@ public class DataImport {
             age = Integer.parseInt(info[5]);
             phone = info[6];
             password = info[7];
+        }
+        public seaport_officer(){
+            name = "";
+            city = "";
+            gender = false;
+            age = 0;
+            phone = "";
+            password = "";
         }
     }
 
@@ -619,7 +735,9 @@ public class DataImport {
             name = info[0];
             item_class = info [1];
             price = Float.parseFloat(info[2]);
+
             state = info[17];
+
             retrieval_courier = info[4];
             retrieval_city = info[3];
             delivery_city = info[5];
