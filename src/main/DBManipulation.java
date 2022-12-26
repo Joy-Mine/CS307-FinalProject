@@ -16,7 +16,7 @@ public class DBManipulation implements IDatabaseManipulation {
     private Connection connection;
     private Statement statement;
     private ResultSet resultSet;
-    private boolean startDB(LogInfo logInfo){
+    boolean startDB(LogInfo logInfo){
         String currentUser=logInfo.name(),currentPwd=logInfo.password();
         try {
             connection = DriverManager.getConnection(url,root,pwd);
@@ -101,7 +101,7 @@ public class DBManipulation implements IDatabaseManipulation {
     }
 
     @Override
-    public void $import(String recordsCSV, String staffsCSV) throws ParseException {
+    public void $import(String recordsCSV, String staffsCSV) {
         try {
             connection = DriverManager.getConnection(url,root,pwd);
             connection.setAutoCommit(true);
@@ -109,7 +109,11 @@ public class DBManipulation implements IDatabaseManipulation {
         } catch (SQLException e) {
             System.out.println(e);
         }
-        DataImport.$import(recordsCSV,staffsCSV,connection);
+        try {
+            DataImport.$import(recordsCSV,staffsCSV,connection);
+        } catch (ParseException e) {
+            System.out.println(e);
+        }
         closeDB();
     }
 
@@ -125,7 +129,6 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
-            System.out.println(resultSet.getInt(1));
             return resultSet.getInt(1);
         } catch (SQLException e) {
             System.out.println(e);
@@ -144,7 +147,6 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
-            System.out.println(resultSet.getInt("count"));
             return resultSet.getInt("count");
         } catch (SQLException e) {
             System.out.println(e);
@@ -277,8 +279,16 @@ public class DBManipulation implements IDatabaseManipulation {
                 closeDB();
                 return null;
             }
+            String shipName=resultSet.getString(1),shipOwner=resultSet.getString(2);
+            boolean sailing;
+            sql="select count(*) from item_info where ship='"+name+"' and state='Shipping';";
+//            sql="select count(*) from (select state from item_info where ship='"+name+"')s where state='Shipping';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || resultSet.getInt(1)==0)
+                sailing=false;
+            else sailing=true;
             closeDB();
-            return new ShipInfo(resultSet.getString(1),resultSet.getString(2),resultSet.getBoolean(3));
+            return new ShipInfo(shipName,shipOwner,sailing);
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
@@ -291,7 +301,7 @@ public class DBManipulation implements IDatabaseManipulation {
             return null;
         if(!startDB(log))
             return null;
-        String sql="select * from container where code='"+code+"';";
+        String sql="select type from container where code='"+code+"';";
         try {
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
@@ -299,7 +309,7 @@ public class DBManipulation implements IDatabaseManipulation {
                 return null;
             }
             ContainerInfo.Type type;
-            switch (resultSet.getString(2)){
+            switch (resultSet.getString(1)){
                 case "Dry":
                     type= ContainerInfo.Type.Dry;
                     break;
@@ -318,8 +328,14 @@ public class DBManipulation implements IDatabaseManipulation {
                 default:
                     type=null;
             }
+            boolean containerUsing;
+            sql="select count(*) from item_info where container_code='"+code+"' and (state='PackingToContainer' or state='UnpackingFromContainer' or state='WaitingForShipping' or state='Shipping');";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || resultSet.getInt(1)==0)
+                containerUsing=false;
+            else containerUsing=true;
             closeDB();
-            return new ContainerInfo(type,resultSet.getString(1),resultSet.getBoolean(3));
+            return new ContainerInfo(type,code,containerUsing);
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
@@ -339,39 +355,42 @@ public class DBManipulation implements IDatabaseManipulation {
                 closeDB();
                 return null;
             }
-            String type=resultSet.getString(1);
-            switch (type){
+            switch (resultSet.getString(2)){
                 case "Courier":
 //                    table = "courier";
                     sql="select * from courier where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
+                    resultSet.next();
                     closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.Courier,resultSet.getString(7))
                             ,resultSet.getString(2),resultSet.getString(3),resultSet.getBoolean(4)
                             ,resultSet.getInt(5),resultSet.getString(6));
-                case "Company Manager":
+                case "CompanyManager":
 //                    table="company_manager";
                     sql="select * from company_manager where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
+                    resultSet.next();
                     closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.CompanyManager,resultSet.getString(6))
-                            ,resultSet.getString(2),"",resultSet.getBoolean(3)
+                            ,resultSet.getString(2),null,resultSet.getBoolean(3)
                             ,resultSet.getInt(4),resultSet.getString(5));
-                case "Seaport Officer":
+                case "SeaportOfficer":
 //                    table="seaport_officer";
                     sql="select * from seaport_officer where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
+                    resultSet.next();
                     closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.SeaportOfficer,resultSet.getString(6))
-                            ,"",resultSet.getString(2),resultSet.getBoolean(3)
+                            ,null,resultSet.getString(2),resultSet.getBoolean(3)
                             ,resultSet.getInt(4),resultSet.getString(5));
-                case "SUSTC Department Manager":
+                case "SustcManager":
 //                    table="department_manager";
                     sql="select * from department_manager where name='"+name+"';";
                     resultSet= statement.executeQuery(sql);
+                    resultSet.next();
                     closeDB();
                     return new StaffInfo(new LogInfo(name, LogInfo.StaffType.SustcManager,resultSet.getString(5))
-                            ,"","",resultSet.getBoolean(2)
+                            ,null,null,resultSet.getBoolean(2)
                             ,resultSet.getInt(3),resultSet.getString(4));
             }
             closeDB();
@@ -390,25 +409,27 @@ public class DBManipulation implements IDatabaseManipulation {
             return false;
         if(!startDB(log))
             return false;
-        //要判断的情况：Item是否已存在；登录的这位快递员是否在这个城市，import tax和export tax跟城市有没有对上
-        if(item.retrieval().city()==item.delivery().city() || item.$import().city()==item.export().city() || log.name()!=item.retrieval().courier()) {
+        //要判断的情况：Item是否已存在；，import tax和export tax跟城市有没有对上
+        // 删掉：登录的这位快递员是否在这个城市
+        if(item.retrieval().city()==item.delivery().city() || item.$import().city()==item.export().city()) {// || log.name()!=item.retrieval().courier()
             closeDB();
             return false;
         }
-        String sql="select city from courier where name='"+item.retrieval().courier()+"';";
+        String sql="";
+//                "select city from courier where name='"+item.retrieval().courier()+"';";
         try {
-            resultSet=statement.executeQuery(sql);
-            if(!resultSet.next()){
-                closeDB();
-                return false;
-            }
-            String courierCity=resultSet.getString(1);
-            if(courierCity!=item.retrieval().city()) {
-                closeDB();
-                return false;
-            }
-            String sql1="select tax_rate from tax_rate where city_name=='"+item.$import().city()+"' and item_class=='"+item.$class()+"'; ";
-            String sql2="select tax_rate from tax_rate where city_name=='"+item.export().city()+"' and item_class=='"+item.$class()+"'; ";
+//            resultSet=statement.executeQuery(sql);
+//            if(!resultSet.next()){
+//                closeDB();
+//                return false;
+//            }
+//            String courierCity=resultSet.getString(1);
+//            if(courierCity!=item.retrieval().city()) {
+//                closeDB();
+//                return false;
+//            }
+            String sql1="select tax_rate from tax_rate where city_name='"+item.$import().city()+"' and item_class='"+item.$class()+"'; ";
+            String sql2="select tax_rate from tax_rate where city_name='"+item.export().city()+"' and item_class='"+item.$class()+"'; ";
             resultSet=statement.executeQuery(sql1);
             if(!resultSet.next()){
                 closeDB();
@@ -452,7 +473,12 @@ public class DBManipulation implements IDatabaseManipulation {
             return false;
         String sql="select * from item_info where name='"+name+"';";
         try {
-            resultSet=statement.executeQuery(sql);
+            try {
+                resultSet = statement.executeQuery(sql);
+            }catch (Exception e){
+                System.out.println(e);
+                System.out.println("shini");
+            }
             if(!resultSet.next()){
                 closeDB();
                 return false;

@@ -186,7 +186,7 @@ public class LocalJudge {
      */
     @Test
     @Order(7)
-    @Timeout(value = 600, unit = TimeUnit.MILLISECONDS)
+    @Timeout(value = 6000, unit = TimeUnit.MILLISECONDS)
     public void getItemInfo() {
         Set<Map.Entry<List<Object>, ItemInfo>> entries = sustcDepartmentManagerUserTest.getItemInfo.entrySet();
         for (Map.Entry<List<Object>, ItemInfo> entry : entries) {
@@ -201,7 +201,7 @@ public class LocalJudge {
      */
     @Test
     @Order(8)
-    @Timeout(value = 600, unit = TimeUnit.MILLISECONDS)
+    @Timeout(value = 6000, unit = TimeUnit.MILLISECONDS)
     public void getShipInfo() {
         Set<Map.Entry<List<Object>, ShipInfo>> entries = sustcDepartmentManagerUserTest.getShipInfo.entrySet();
         for (Map.Entry<List<Object>, ShipInfo> entry : entries) {
@@ -216,7 +216,7 @@ public class LocalJudge {
      */
     @Test
     @Order(9)
-    @Timeout(value = 600, unit = TimeUnit.MILLISECONDS)
+    @Timeout(value = 6000, unit = TimeUnit.MILLISECONDS)
     public void getContainerInfo() {
         Set<Map.Entry<List<Object>, ContainerInfo>> entries = sustcDepartmentManagerUserTest.getContainerInfo.entrySet();
         for (Map.Entry<List<Object>, ContainerInfo> entry : entries) {

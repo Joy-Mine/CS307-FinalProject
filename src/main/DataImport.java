@@ -1,8 +1,6 @@
 package main;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -512,7 +510,7 @@ public class DataImport {
     class staff_type{
         public String name;
         public String type;
-        public staff_type(String[] info) throws ParseException {
+        public staff_type(String[] info) {
             name = info[0];
             if(Objects.equals(info[1], "Courier")){
                 type = "Courier";
@@ -535,16 +533,13 @@ public class DataImport {
 
     class city {
         public String name;
-
         public city(String info1) {   // for retrieval couriers
             name = info1;
         }
-
     }
 
     class company {
         public String name;
-
         public company(String []info) {
             name=info[16];
         }
@@ -554,7 +549,6 @@ public class DataImport {
         public String name;
         public String company_name;
         public boolean sailing;
-
         public ship(String[] info) {
             if (info[15]=="e63efe60"){
                 sailing = true;
@@ -564,8 +558,6 @@ public class DataImport {
             }
             name=info[15];
             company_name = info[16];
-
-
         }
     }
 
@@ -574,7 +566,6 @@ public class DataImport {
         public String type;
         public boolean full;
         public boolean loaded;
-
         public container(String[] info) {
             code=info[13];
             switch (info[14]){
@@ -599,7 +590,6 @@ public class DataImport {
                 default:
                     break;
             }
-
             full = false;
             loaded = false;
         }
@@ -609,11 +599,8 @@ public class DataImport {
         public String city_name;
         public String item_class;
         public float import_tax_rate;
-
         public float export_tax_rate;
-
         public tax_rate(String[] info,String info1) {
-
             city_name=info1;
             item_class=info[1];
             import_tax_rate = Float.parseFloat(info[10])/Float.parseFloat(info[2]);
@@ -629,7 +616,6 @@ public class DataImport {
         public int age;
         public String phone;
         public String password;
-
         public courier(String[] info) {
             name = info[0];
             company = info[2];
@@ -638,7 +624,6 @@ public class DataImport {
             age = Integer.parseInt(info[5]);
             phone = info[6];
             password = info[7];
-
         }
         public courier() {
             name = "";
@@ -648,7 +633,6 @@ public class DataImport {
             age = 0;
             phone = "";
             password = "";
-
         }
     }
 
@@ -659,7 +643,6 @@ public class DataImport {
         public int age;
         public String phone;
         public String password;
-
         public company_manager(String [] info){
             name = info[0];
             company = info[2];
@@ -702,7 +685,6 @@ public class DataImport {
         public int age;
         public String phone;
         public String password;
-
         public department_manager(String [] info){
             name = info[0];
             gender = Objects.equals(info[4], "female");
@@ -736,7 +718,51 @@ public class DataImport {
             item_class = info [1];
             price = Float.parseFloat(info[2]);
 
-            state = info[17];
+            switch (info[17]){
+                case "Picking-Up":
+                    state = "PickingUp";
+                    break;
+                case "To-Export Transporting":
+                    state = "ToExportTransporting";
+                    break;
+                case "Export Checking":
+                    state = "ExportChecking";
+                    break;
+                case "Export Check Fail":
+                    state = "ExportCheckFailed";
+                    break;
+                case "Packing to Container":
+                    state = "PackingToContainer";
+                    break;
+                case "Waiting for Shipping":
+                    state = "WaitingForShipping";
+                    break;
+                case "Shipping":
+                    state = "Shipping";
+                    break;
+                case "Unpacking from Container":
+                    state = "UnpackingFromContainer";
+                    break;
+                case "Import Checking":
+                    state = "ImportChecking";
+                    break;
+                case "Import Check Fail":
+                    state = "ImportCheckFailed";
+                    break;
+                case "From-Import Transporting":
+                    state = "FromImportTransporting";
+                    break;
+                case "Delivering":
+                    state = "Delivering";
+                    break;
+                case "Finish":
+                    state = "Finish";
+                    break;
+                default:
+                    state = "";
+                    break;
+            }
+//            state = info[17];
 
             retrieval_courier = info[4];
             retrieval_city = info[3];

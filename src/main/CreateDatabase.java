@@ -6,26 +6,25 @@ public class CreateDatabase {
     public static void create(Connection connection) throws SQLException {
         //todo:建数据库，建四种数据库user，建表
 
+        Statement statement=connection.createStatement();
+        ResultSet resultSet=statement.executeQuery("select count(*) from pg_user where usename='courier';");
+        resultSet.next();
 
         PreparedStatement ps;
-
-
-
-
-
-
+        if(resultSet.getInt(1)==0){
         /*ps=connection.prepareStatement("CREATE DATABASE  project2");
         ps.executeUpdate();//执行sql语句*/
+            ps=connection.prepareStatement("CREATE USER courier WITH PASSWORD '123456' superuser ");
+            ps.executeUpdate();
+            ps=connection.prepareStatement("CREATE USER company_manager WITH PASSWORD '123456' superuser ");
+            ps.executeUpdate();
+            ps=connection.prepareStatement("CREATE USER seaport_officer WITH PASSWORD '123456' superuser ");
+            ps.executeUpdate();
+            ps=connection.prepareStatement("CREATE USER department_manager PASSWORD '123456'" +
+                    "SUPERUSER ;");
+            ps.executeUpdate();
+        }
 
-        ps=connection.prepareStatement("CREATE USER courier WITH PASSWORD '123456' ");
-        ps.executeUpdate();
-        ps=connection.prepareStatement("CREATE USER company_manager WITH PASSWORD '123456'");
-        ps.executeUpdate();
-        ps=connection.prepareStatement("CREATE USER seaport_officer WITH PASSWORD '123456'");
-        ps.executeUpdate();
-        ps=connection.prepareStatement("CREATE USER department_manager PASSWORD '123456'\n" +
-                "SUPERUSER  ;");
-        ps.executeUpdate();
         /*ps=connection.prepareStatement("SHOW TABLES LIKE \"student\"");
         rs=ps.executeQuery();
         if(rs.next())
@@ -192,9 +191,5 @@ public class CreateDatabase {
                               references company(name)
                   );""");
         ps.executeUpdate();
-
-
-
-
     }
 }
