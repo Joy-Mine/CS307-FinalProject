@@ -964,12 +964,12 @@ public class DBManipulation implements IDatabaseManipulation {
             return null;
         }
     }
-    public String[] getAllItemsOnTheShip(LogInfo loginfo,ShipInfo shipInfo){
+    public String[] getAllItemsOnTheShip(LogInfo loginfo,String shipName){
         if(!startDB(loginfo)){
             closeDB();
             return null;
         }
-        String sql="select name from item_info where state='Shipping' and ship='"+shipInfo.name()+"';";
+        String sql="select name from item_info where state='Shipping' and ship='"+shipName+"';";
         try {
             resultSet=statement.executeQuery(sql);
             ArrayList<String> ans=new ArrayList<>();
@@ -983,12 +983,12 @@ public class DBManipulation implements IDatabaseManipulation {
             return null;
         }
     }
-    public String[] getAllContainersOnTheShip(LogInfo loginfo,ShipInfo shipInfo){
+    public String[] getAllContainersOnTheShip(LogInfo loginfo,String shipName){
         if(!startDB(loginfo)){
             closeDB();
             return null;
         }
-        String sql="select container_code from item_info where state='Shipping' and ship='"+shipInfo.name()+"';";
+        String sql="select container_code from item_info where state='Shipping' and ship='"+shipName+"';";
         try {
             resultSet=statement.executeQuery(sql);
             ArrayList<String> ans=new ArrayList<>();

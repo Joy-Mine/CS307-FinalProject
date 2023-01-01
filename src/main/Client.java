@@ -10,6 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 
 public class Client {
     static DBManipulation dbManipulation=new DBManipulation("localhost:5432/project2","postgres","POST888lbjn");
@@ -143,6 +144,52 @@ public class Client {
                     JButton getAllItemsOnTheShipButton=new JButton("getAllItemsOnTheShip");
                     JButton getAllContainersOnTheShip=new JButton("getAllContainersOnTheShip");
                     JButton changePassword=new JButton("changePassword");
+                    getAllFinishItemsButton.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String[] all=dbManipulation.getAllFinishItems(new LogInfo(user, LogInfo.StaffType.SustcManager,pwd));
+                            String[] some=new String[20];
+                            for(int i=0;i<10;++i)
+                                some[i]=all[i];
+                            String ans= Arrays.toString(some);
+                            JOptionPane.showMessageDialog(panel2,ans+"... ...","getAllFinishItems",JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    });
+                    getAllItemsOnTheShipButton.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String shipName=JOptionPane.showInputDialog(panel2,"请输入船名：");
+                            String[] all=dbManipulation.getAllItemsOnTheShip(new LogInfo(user, LogInfo.StaffType.SustcManager,pwd),shipName);
+                            String[] some=new String[20];
+                            for(int i=0;i<10;++i)
+                                some[i]=all[i];
+                            String ans= Arrays.toString(some);
+                            JOptionPane.showMessageDialog(panel2,ans+"... ...","getAllItemsOnTheShip",JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    });
+                    getAllContainersOnTheShip.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String shipName=JOptionPane.showInputDialog(panel2,"请输入船名：");
+                            String[] all=dbManipulation.getAllContainersOnTheShip(new LogInfo(user, LogInfo.StaffType.SustcManager,pwd),shipName);
+                            String[] some=new String[20];
+                            for(int i=0;i<10;++i)
+                                some[i]=all[i];
+                            String ans= Arrays.toString(some);
+                            JOptionPane.showMessageDialog(panel2,ans+"... ...","getAllItemsOnTheShip",JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    });
+                    changePassword.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String newPWD=JOptionPane.showInputDialog(panel2,"请输入新密码：");
+                            if(dbManipulation.changePassword(new LogInfo(user, LogInfo.StaffType.SustcManager,pwd),newPWD))
+                                JOptionPane.showMessageDialog(panel2,"修改成功","changePassword",JOptionPane.INFORMATION_MESSAGE);
+                            else
+                                JOptionPane.showMessageDialog(panel2,"修改失败","changePassword",JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    });
+
                     panel2.add(getAllFinishItemsButton);
                     panel2.add(getAllItemsOnTheShipButton);
                     panel2.add(getAllContainersOnTheShip);
