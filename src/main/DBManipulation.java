@@ -5,7 +5,6 @@ import main.interfaces.*;
 import java.sql.*;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -18,8 +17,68 @@ public class DBManipulation implements IDatabaseManipulation {
     private Connection connection;
     private Statement statement;
     private ResultSet resultSet;
-    boolean startDB(LogInfo logInfo){
 
+    String login(String user,String currentPwd){
+        String type="";
+        try {
+            connection = DriverManager.getConnection(url,root,pwd);
+            connection.setAutoCommit(true);
+            statement=connection.createStatement();
+            String sql="select type from staff_type where name='"+user+"';";
+            resultSet=statement.executeQuery(sql);
+            /*System.out.println(!resultSet.next());
+            System.out.println(resultSet.getString("type"));
+            System.out.println(logInfo.type());*/
+            if(!resultSet.next() ){
+                System.out.println("No such staff.");
+                closeDB();
+                return "";
+            }
+            type=resultSet.getString(1);
+            if(Objects.equals(type, "Courier"))
+                sql="select password from courier where name='"+user+"';";
+            else if(Objects.equals(type, "CompanyManager"))
+                sql="select password from company_manager where name='"+user+"';";
+            else if(Objects.equals(type, "SeaportOfficer"))
+                sql="select password from seaport_officer where name='"+user+"';";
+            else if(Objects.equals(type, "SustcManager"))
+                sql="select password from department_manager where name='"+user+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || !Objects.equals(resultSet.getString(1), currentPwd)){
+                System.out.println("Wrong password.");
+                closeDB();
+                return "";
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+//        closeDB();
+        Properties properties=new Properties();
+        if(type.equals("Courier")){
+            properties.setProperty("user","courier");
+            properties.setProperty("password","123456");
+        }else if(type.equals("CompanyManager")){
+            properties.setProperty("user","company_manager");
+            properties.setProperty("password","123456");
+        }else if(type.equals("SeaportOfficer")){
+            properties.setProperty("user","seaport_officer");
+            properties.setProperty("password","123456");
+        }else if(type.equals("SustcManager")){
+            properties.setProperty("user","department_manager");
+            properties.setProperty("password","123456");
+        }
+
+        try {
+            connection = DriverManager.getConnection(url,properties);
+            connection.setAutoCommit(true);
+            statement=connection.createStatement();
+            return type;
+        } catch (SQLException e) {
+            System.out.println(e);
+            return "";
+        }
+    }
+    boolean startDB(LogInfo logInfo){
         String currentUser=logInfo.name(),currentPwd=logInfo.password();
         try {
             connection = DriverManager.getConnection(url,root,pwd);
