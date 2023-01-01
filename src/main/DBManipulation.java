@@ -5,6 +5,7 @@ import main.interfaces.*;
 import java.sql.*;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -877,6 +878,101 @@ public class DBManipulation implements IDatabaseManipulation {
                 return true;
             }
             return false;
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return false;
+        }
+    }
+
+    //Advanced api
+    public String[] getAllFinishItems(LogInfo loginfo){
+        if(!startDB(loginfo)){
+            closeDB();
+            return null;
+        }
+        String sql="select name from item_info where state='Finish';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            ArrayList<String> ans=new ArrayList<>();
+            while (resultSet.next()){
+                ans.add(resultSet.getString(1));
+            }
+            return ans.toArray(new String[ans.size()]);
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return null;
+        }
+    }
+    public String[] getAllItemsOnTheShip(LogInfo loginfo,ShipInfo shipInfo){
+        if(!startDB(loginfo)){
+            closeDB();
+            return null;
+        }
+        String sql="select name from item_info where state='Shipping' and ship='"+shipInfo.name()+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            ArrayList<String> ans=new ArrayList<>();
+            while (resultSet.next()){
+                ans.add(resultSet.getString(1));
+            }
+            return ans.toArray(new String[ans.size()]);
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return null;
+        }
+    }
+    public String[] getAllContainersOnTheShip(LogInfo loginfo,ShipInfo shipInfo){
+        if(!startDB(loginfo)){
+            closeDB();
+            return null;
+        }
+        String sql="select container_code from item_info where state='Shipping' and ship='"+shipInfo.name()+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            ArrayList<String> ans=new ArrayList<>();
+            while (resultSet.next()){
+                ans.add(resultSet.getString(1));
+            }
+            return ans.toArray(new String[ans.size()]);
+        } catch (SQLException e) {
+            System.out.println(e);
+            closeDB();
+            return null;
+        }
+    }
+    public boolean changePassword(LogInfo loginfo,String newPWD){
+        if(!startDB(loginfo)){
+            closeDB();
+            return false;
+        }
+        String sql="select type from staff_type where name='"+loginfo.name()+"';";
+        try {
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            String type=resultSet.getString(1);
+            switch (type){
+                case "Courier":
+                    type="courier";
+                    break;
+                case "CompanyManager":
+                    type="company_manager";
+                    break;
+                case "SeaportOfficer":
+                    type="seaport_officer";
+                    break;
+                case "SustcManager":
+                    type="department_manager";
+                    break;
+            }
+            sql="update "+type+" set password='"+newPWD+"' where name='"+loginfo.name()+"';";
+            statement.execute(sql);
+            return true;
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
