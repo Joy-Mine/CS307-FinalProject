@@ -17,7 +17,7 @@ public class Front {
 
     private LogInfo logInfo = new LogInfo("test", LogInfo.StaffType.SustcManager,"123456");
 
-    private DBManipulation dbManipulation = new DBManipulation("localhost:5432/project2","postgres","123456");
+    private DBManipulation dbManipulation = new DBManipulation("localhost:5432/project2","postgres","POST888lbjn");
 
     public Front (){
         while(true) {
@@ -231,7 +231,6 @@ public class Front {
            System.out.println("No such staff!");
            System.out.println("Please input your info again");
            System.out.println("---------------");
-
        }
     }
 

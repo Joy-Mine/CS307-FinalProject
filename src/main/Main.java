@@ -12,12 +12,8 @@ import java.text.ParseException;
 public class Main {
     public static void main(String[] args) throws ParseException, FileNotFoundException {
         //此方法没用；可用于调试代码
-        DBManipulation dbManipulation = new DBManipulation("localhost:5432/project2","postgres","123456");
-        LogInfo logInfo = new LogInfo("Hua Hang", LogInfo.StaffType.SustcManager, "500622842781782190");
-        dbManipulation.$import(readfile("./data/records.csv"),readfile("./data/staffs.csv"));
-        //dbManipulation.getCityCount(new LogInfo("Hua Hang", LogInfo.StaffType.SustcManager, "500622842781782190"));
-        //dbManipulation.getItemInfo(logInfo,"cherry-3a393");
-        dbManipulation.getShipInfo(logInfo,"e63efe60");
+
+        new Front();
     }
 
     private static String readfile(String s) throws FileNotFoundException {

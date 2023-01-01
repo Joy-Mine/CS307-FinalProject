@@ -345,6 +345,9 @@ public class LocalJudge {
 
         ItemInfo itemInfo = manipulation.getItemInfo(logInfo, "banana-136c");
         assertEquals(ItemState.WaitingForShipping, itemInfo.state());
+//        for(int i=1;i<=1234000;++i){
+//            i++;
+//        }
     }
 
     /**
@@ -365,6 +368,9 @@ public class LocalJudge {
 
         ItemInfo itemInfo = manipulation.getItemInfo(logInfo, "banana-136c");
         assertEquals(ItemState.Shipping, itemInfo.state());
+//        for(int i=1;i<=1234000;++i){
+//            i++;
+//        }
     }
 
     /**

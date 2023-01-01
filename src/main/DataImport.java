@@ -25,21 +25,27 @@ public class DataImport {
         Set<String> company_manager_name = new HashSet<>();//primary key of company_manager
         Set<String> seaport_officer_name = new HashSet<>();//primary key of seaport_officer
         Set<String> department_manager_name = new HashSet<>();//primary key of department_manager
-        Set<String> city_name_tax = new HashSet<>();//primary key of tax_rate
-        Set<String> item_class = new HashSet<>();//primary key of tax_rate
+        Set<String> city_name_import_tax_and_class = new HashSet<>();//primary key of tax_rate
+        Set<String> city_name_export_tax_and_class = new HashSet<>();//primary key of tax_rate
         Set<String> item_name = new HashSet<>();//primary key of item_info
         ArrayList<staff_type> staff_type_list = new ArrayList<>();
         ArrayList<city> city_list = new ArrayList<>();
         ArrayList<company> company_list = new ArrayList<>();
         ArrayList<ship> ship_list = new ArrayList<>();
         ArrayList<container> container_list = new ArrayList<>();
-        ArrayList<tax_rate> tax_rate_list = new ArrayList<>();
+        ArrayList<import_tax_rate> import_tax_rate_list = new ArrayList<>();
+        ArrayList<export_tax_rate> export_tax_rate_list = new ArrayList<>();
         ArrayList<courier> courier_list = new ArrayList<>();
         ArrayList<company_manager> company_manager_list = new ArrayList<>();
         ArrayList<seaport_officer> seaport_officer_list = new ArrayList<>();
         ArrayList<department_manager> department_manager_list = new ArrayList<>();
         ArrayList<item_info> item_info_list = new ArrayList<>();
         String [] line_array = recordsCSV.split("\n");
+
+        String[] empty_info=new String[20];
+        for(int i=0;i<20;++i)
+            empty_info[i]=new String();
+
         int i = 0;
             while (line_array[i] != null) {
                 i++;
@@ -83,32 +89,13 @@ public class DataImport {
                     container_code.add(info[13]);
                     container_list.add(new container(info));
                 }
-                if ((!city_name_tax.contains(info[7]))||(!city_name_tax.contains(info[8]))) {
-                    if(!item_class.contains((info[1]))){
-                        if(!item_class.contains((info[7]))){
-                            city_name_tax.add(info[7]);
-                            item_class.add(info[1]);
-                            tax_rate_list.add(new tax_rate(info,info[7]));
-                        }
-                        if(!item_class.contains((info[8]))){
-                            city_name_tax.add(info[7]);
-                            item_class.add(info[1]);
-                            tax_rate_list.add(new tax_rate(info,info[8]));
-                        }
-                    }
+                if (!city_name_import_tax_and_class.contains(info[8]+""+info[1])) {
+                    city_name_import_tax_and_class.add(info[8]+""+info[1]);
+                    import_tax_rate_list.add(new import_tax_rate(info,info[8]));
                 }
-                else if ((city_name_tax.contains(info[7]))&&(city_name_tax.contains(info[8]))){
-                    if(!item_class.contains((info[1]))){
-                        if(!item_class.contains((info[7]))){
-                            city_name_tax.add(info[7]);
-                            item_class.add(info[1]);
-                            tax_rate_list.add(new tax_rate(info,info[7]));
-                        }
-                        if(!item_class.contains((info[8]))){
-                            city_name_tax.add(info[7]);
-                            item_class.add(info[1]);
-                            tax_rate_list.add(new tax_rate(info,info[8]));
-                        }}
+                if(!city_name_export_tax_and_class.contains(info[7]+""+info[1])){
+                    city_name_export_tax_and_class.add(info[7]+""+info[1]);
+                    export_tax_rate_list.add(new export_tax_rate(info,info[7]));
                 }
             }
 
@@ -179,6 +166,7 @@ public class DataImport {
             }
         }
 
+        city_list.add(new city(""));
         sql = "insert into city (name) values (?)";
         try {
             connection.setAutoCommit(false);
@@ -207,8 +195,7 @@ public class DataImport {
             }
         }
 
-
-
+        company_list.add(new company(empty_info));
         sql = "insert into company (name) values (?)";
         try {
             connection.setAutoCommit(false);
@@ -237,6 +224,7 @@ public class DataImport {
             }
         }
 
+//        ship_list.add(new ship(empty_info));
         sql = "insert into ship (ship_name,company_name,sailing) values (?,?,?)";
         try {
             connection.setAutoCommit(false);
@@ -246,6 +234,7 @@ public class DataImport {
                 preparedStatement.setString(1, ship.name);
                 preparedStatement.setString(2, ship.company_name);
                 preparedStatement.setBoolean(3, ship.sailing);
+//                preparedStatement.setBoolean(3, false);
                 preparedStatement.addBatch();
                 if (++cnt % BATCH_SIZE == 0) {
                     preparedStatement.executeBatch();
@@ -266,6 +255,7 @@ public class DataImport {
             }
         }
 
+//        container_list.add(new container(empty_info));
         sql = "insert into container (code,type,isfull,loaded) values (?,?,?,?)";
         try {
             connection.setAutoCommit(false);
@@ -296,16 +286,45 @@ public class DataImport {
             }
         }
 
-        sql = "insert into tax_rate (city_name,item_class,import_tax_rate,export_tax_rate) values (?,?,?,?)";
+        sql = "insert into import_tax_rate (city_name,item_class,import_tax_rate) values (?,?,?)";
         try {
             connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int cnt=0;
-            for (tax_rate tax_rate : tax_rate_list) {
-                preparedStatement.setString(1, tax_rate.city_name);
-                preparedStatement.setString(2, tax_rate.item_class);
-                preparedStatement.setFloat(3, tax_rate.import_tax_rate);
-                preparedStatement.setFloat(4, tax_rate.export_tax_rate);
+            for (import_tax_rate import_tax_rate : import_tax_rate_list) {
+                preparedStatement.setString(1, import_tax_rate.city_name);
+                preparedStatement.setString(2, import_tax_rate.item_class);
+                preparedStatement.setFloat(3, import_tax_rate.import_tax_rate);
+
+                preparedStatement.addBatch();
+                if (++cnt % BATCH_SIZE == 0) {
+                    preparedStatement.executeBatch();
+                    preparedStatement.clearBatch();
+                }
+
+            }
+            if (cnt % BATCH_SIZE != 0)
+                preparedStatement.executeBatch();
+            connection.setAutoCommit(false);
+            connection.commit();
+        } catch (SQLException se) {
+            System.err.println("SQL error: " + se.getMessage());
+            try {
+                connection.rollback();
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
+        }
+
+        sql = "insert into export_tax_rate (city_name,item_class,export_tax_rate) values (?,?,?)";
+        try {
+            connection.setAutoCommit(false);
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            int cnt=0;
+            for (export_tax_rate export_tax_rate : export_tax_rate_list) {
+                preparedStatement.setString(1, export_tax_rate.city_name);
+                preparedStatement.setString(2, export_tax_rate.item_class);
+                preparedStatement.setFloat(3, export_tax_rate.export_tax_rate);
 
                 preparedStatement.addBatch();
                 if (++cnt % BATCH_SIZE == 0) {
@@ -461,7 +480,7 @@ public class DataImport {
             }
         }
 
-        sql = "insert into item_info (name,class,price,state,retrieval_courier,retrieval_city,delivery_city,delivery_courier,import_city,import_officer,import_tax,export_city,export_officer,export_tax,ship,container_code,company) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        sql = "insert into item_info (name,class,price,state,retrieval_city,retrieval_courier,delivery_city,delivery_courier,import_city,import_officer,import_tax,export_city,export_officer,export_tax,ship,container_code,company) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try {
             connection.setAutoCommit(false);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
@@ -471,8 +490,8 @@ public class DataImport {
                 preparedStatement.setString(2, item_info.item_class);
                 preparedStatement.setFloat(3, item_info.price);
                 preparedStatement.setString(4, item_info.state);
-                preparedStatement.setString(5, item_info.retrieval_courier);
-                preparedStatement.setString(6, item_info.retrieval_city);
+                preparedStatement.setString(5,item_info.retrieval_city);
+                preparedStatement.setString(6,item_info.retrieval_courier);
                 preparedStatement.setString(7, item_info.delivery_city);
                 preparedStatement.setString(8, item_info.delivery_courier);
                 preparedStatement.setString(9, item_info.import_city);
@@ -550,12 +569,9 @@ public class DataImport {
         public String company_name;
         public boolean sailing;
         public ship(String[] info) {
-            if (info[15]=="e63efe60"){
-                sailing = true;
-            }
-            else {
-                sailing = Objects.equals(info[17], "Shipping");
-            }
+                if(info[17].equals("Shipping"))
+                    sailing=true;
+                else sailing=false;
             name=info[15];
             company_name = info[16];
         }
@@ -595,18 +611,27 @@ public class DataImport {
         }
     }
 
-    class tax_rate{
+    class import_tax_rate{
         public String city_name;
         public String item_class;
         public float import_tax_rate;
-        public float export_tax_rate;
-        public tax_rate(String[] info,String info1) {
+        public import_tax_rate(String[] info,String info1) {
             city_name=info1;
             item_class=info[1];
             import_tax_rate = Float.parseFloat(info[10])/Float.parseFloat(info[2]);
-            export_tax_rate = Float.parseFloat(info[9])/Float.parseFloat(info[2]);
         }
     }
+
+    class export_tax_rate{
+        public String city_name;
+        public String item_class;
+        public float export_tax_rate;
+        public export_tax_rate(String[] info,String info1) {
+        city_name=info1;
+        item_class=info[1];
+        export_tax_rate = Float.parseFloat(info[9])/Float.parseFloat(info[2]);
+    }
+}
 
     class courier{
         public String name;

@@ -10,6 +10,7 @@ import java.util.Properties;
 
 public class DBManipulation implements IDatabaseManipulation {
 
+
     //    private String database;
     private String root,pwd;
     private String url;
@@ -17,6 +18,7 @@ public class DBManipulation implements IDatabaseManipulation {
     private Statement statement;
     private ResultSet resultSet;
     boolean startDB(LogInfo logInfo){
+
         String currentUser=logInfo.name(),currentPwd=logInfo.password();
         try {
             connection = DriverManager.getConnection(url,root,pwd);
@@ -129,7 +131,7 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
-            return resultSet.getInt(1);
+            return resultSet.getInt(1)-1;
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
@@ -147,7 +149,7 @@ public class DBManipulation implements IDatabaseManipulation {
             resultSet=statement.executeQuery(sql);
             resultSet.next();
             closeDB();
-            return resultSet.getInt("count");
+            return resultSet.getInt("count")-1;
         } catch (SQLException e) {
             System.out.println(e);
             closeDB();
@@ -251,7 +253,7 @@ public class DBManipulation implements IDatabaseManipulation {
                 default:
                     state=null;
             }
-            retrievalInfo=new ItemInfo.RetrievalDeliveryInfo(resultSet.getString(6),resultSet.getString(5));
+            retrievalInfo=new ItemInfo.RetrievalDeliveryInfo(resultSet.getString(5),resultSet.getString(6));
             deliveryInfo=new ItemInfo.RetrievalDeliveryInfo(resultSet.getString(7),resultSet.getString(8));
             importInfo=new ItemInfo.ImportExportInfo(resultSet.getString(9),resultSet.getString(10),resultSet.getDouble(11));
             exportInfo=new ItemInfo.ImportExportInfo(resultSet.getString(12),resultSet.getString(13),resultSet.getDouble(14));
@@ -404,32 +406,30 @@ public class DBManipulation implements IDatabaseManipulation {
 
     //courier
     @Override
-    public boolean newItem(LogInfo log, ItemInfo item) {//todo: 什么时候return false，还很不确定
+    public boolean newItem(LogInfo log, ItemInfo item) {
         if(log.type()!= LogInfo.StaffType.Courier)
             return false;
         if(!startDB(log))
             return false;
-        //要判断的情况：Item是否已存在；，import tax和export tax跟城市有没有对上
-        // 删掉：登录的这位快递员是否在这个城市
+        //要判断的情况：Item是否已存在; 登录的快递员所在的城市; import tax和export tax跟城市有没有对上
         if(item.retrieval().city()==item.delivery().city() || item.$import().city()==item.export().city()) {// || log.name()!=item.retrieval().courier()
             closeDB();
             return false;
         }
-        String sql="";
-//                "select city from courier where name='"+item.retrieval().courier()+"';";
+        String sql="select city from courier where name='"+log.name()+"';";
         try {
-//            resultSet=statement.executeQuery(sql);
-//            if(!resultSet.next()){
-//                closeDB();
-//                return false;
-//            }
-//            String courierCity=resultSet.getString(1);
-//            if(courierCity!=item.retrieval().city()) {
-//                closeDB();
-//                return false;
-//            }
-            String sql1="select tax_rate from tax_rate where city_name='"+item.$import().city()+"' and item_class='"+item.$class()+"'; ";
-            String sql2="select tax_rate from tax_rate where city_name='"+item.export().city()+"' and item_class='"+item.$class()+"'; ";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            String courierCity=resultSet.getString(1);
+            if(!courierCity.equals(item.retrieval().city())) {
+                closeDB();
+                return false;
+            }
+            String sql1="select import_tax_rate from import_tax_rate where city_name='"+item.$import().city()+"' and item_class='"+item.$class()+"'; ";
+            String sql2="select export_tax_rate from export_tax_rate where city_name='"+item.export().city()+"' and item_class='"+item.$class()+"'; ";
             resultSet=statement.executeQuery(sql1);
             if(!resultSet.next()){
                 closeDB();
@@ -442,20 +442,31 @@ public class DBManipulation implements IDatabaseManipulation {
                 return false;
             }
             Double exportTaxRate=resultSet.getDouble(1);
-            if(importTaxRate!=(item.$import().tax()/item.price()) || exportTaxRate!=(item.export().tax()/item.price())){
+            if(Math.abs(importTaxRate-(item.$import().tax()/item.price()))>0.01 || Math.abs(exportTaxRate-(item.export().tax()/item.price()))>0.01){
                 closeDB();
                 return false;
             }
-            sql="select company from courier where name='"+item.retrieval().courier()+"';";
+            sql="select company from courier where name='"+log.name()+"';";
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
                 closeDB();
                 return false;
             }
             String company=resultSet.getString(1);
+            String delivery_courier=item.delivery().courier(),import_officer=item.$import().officer(),export_officer=item.export().officer();
+            if(delivery_courier==null)
+                delivery_courier="";
+            if(item.$import().officer()==null)
+                import_officer="";
+            if(item.export().officer()==null)
+                export_officer="";
+            if(item.name()==null||item.$class()==null){
+                closeDB();
+                return false;
+            }
             sql="insert into item_info " +
                     "(name, class, price, state, retrieval_courier, retrieval_city, delivery_city, delivery_courier, import_city, import_officer, import_tax, export_city, export_officer, export_tax, ship, container_code, company)" +
-                    "values ('"+item.name()+"','"+item.$class()+"',"+item.price()+",'PickingUp','"+item.retrieval().city()+"','"+item.retrieval().courier()+"','"+item.delivery().city()+"','"+item.delivery().courier()+"','"+item.$import().city()+"','"+item.$import().officer()+"',"+item.$import().tax()+",'"+item.export().city()+"','"+item.export().officer()+"',"+item.export().tax()+",' ',' ','"+company+"');";
+                    "values ('"+item.name()+"','"+item.$class()+"',"+item.price()+",'PickingUp','"+log.name()+"','"+item.retrieval().city()+"','"+item.delivery().city()+"','"+delivery_courier+"','"+item.$import().city()+"','"+import_officer+"',"+item.$import().tax()+",'"+item.export().city()+"','"+export_officer+"',"+item.export().tax()+",'','','"+company+"');";
             statement.execute(sql);
             closeDB();
             return true;
@@ -473,22 +484,17 @@ public class DBManipulation implements IDatabaseManipulation {
             return false;
         String sql="select * from item_info where name='"+name+"';";
         try {
-            try {
-                resultSet = statement.executeQuery(sql);
-            }catch (Exception e){
-                System.out.println(e);
-                System.out.println("shini");
-            }
+            resultSet = statement.executeQuery(sql);
             if(!resultSet.next()){
                 closeDB();
                 return false;
             }
             String currentState=resultSet.getString(4);
-            if(log.name()==resultSet.getString(6)){//retrieval_courier, state最多是“ExportChecking”
+            if(log.name().equals(resultSet.getString(6))){//retrieval_courier, state最多是“ExportChecking”
                 switch (currentState){
                     case "PickingUp":
-                        if(s==ItemState.ToExportTransporting){
-                            sql="update item_info set state='ToExportTransporting' where name='name';";
+                        if(s.equals(ItemState.ToExportTransporting)){
+                            sql="update item_info set state='ToExportTransporting' where name='"+name+"';";
                             statement.execute(sql);
                             closeDB();
                             return true;
@@ -497,8 +503,8 @@ public class DBManipulation implements IDatabaseManipulation {
                             return false;
                         }
                     case "ToExportTransporting":
-                        if(s==ItemState.ExportChecking){
-                            sql="update item_info set state='ExportChecking' where name='name';";
+                        if(s.equals(ItemState.ExportChecking)){
+                            sql="update item_info set state='ExportChecking' where name='"+name+"';";
                             statement.execute(sql);
                             closeDB();
                             return true;
@@ -508,10 +514,10 @@ public class DBManipulation implements IDatabaseManipulation {
                         }
                 }
             }
-            else if (log.name()==resultSet.getString(8)){//delivery_courier
-                if(currentState=="FromImportTransporting")
-                    if (s == ItemState.Delivering && s != ItemState.Finish) {
-                        sql="update item_info set state='"+s+"' where name='name';";
+            else if (log.name().equals(resultSet.getString(8))){//delivery_courier
+                if(currentState.equals("FromImportTransporting"))
+                    if (s.equals(ItemState.Delivering) && !s.equals(ItemState.Finish) ) {
+                        sql="update item_info set state='"+s+"' where name='"+name+"';";
                         statement.execute(sql);
                         closeDB();
                         return true;
@@ -550,7 +556,7 @@ public class DBManipulation implements IDatabaseManipulation {
             return -1;
         if(!startDB(log))
             return -1;
-        String sql="select import_tax_rate from tax_rate where city_name='"+city+"' and item_class='"+itemClass+"';";
+        String sql="select import_tax_rate from import_tax_rate where city_name='"+city+"' and item_class='"+itemClass+"';";
         try {
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
@@ -571,7 +577,7 @@ public class DBManipulation implements IDatabaseManipulation {
             return -1;
         if(!startDB(log))
             return -1;
-        String sql="select export_tax_rate from tax_rate where city_name='"+city+"' and item_class='"+itemClass+"';";
+        String sql="select export_tax_rate from export_tax_rate where city_name='"+city+"' and item_class='"+itemClass+"';";
         try {
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
@@ -601,7 +607,7 @@ public class DBManipulation implements IDatabaseManipulation {
             }
             String state=resultSet.getString(1);
             //false情况：state不是PackingToContainer；container已经满了；container已经上船了
-            if(state!="PackingToContainer"){
+            if(!state.equals("PackingToContainer")){
                 closeDB();
                 return false;
             }
@@ -615,8 +621,8 @@ public class DBManipulation implements IDatabaseManipulation {
                 closeDB();
                 return false;
             }
-            String containerType=resultSet.getString(2);
-            sql="update item_info set container_code='"+containerCode+"' where name='"+itemName+"';";
+            sql="update item_info set container_code='"+containerCode+"' where name='"+itemName+"';" +
+                "update container set isfull=true where code='"+containerCode+"';";
             statement.execute(sql);
             closeDB();
             return true;
@@ -628,35 +634,60 @@ public class DBManipulation implements IDatabaseManipulation {
     }
     @Override
     public boolean loadContainerToShip(LogInfo log, String shipName, String containerCode) {
+        System.out.println(shipName+containerCode);
         if(log.type()!=LogInfo.StaffType.CompanyManager)
             return false;
         if(!startDB(log))
             return false;
-        //false情况：container已经上船了；船已经开走了
-        String sql="select * from container where code='"+containerCode+"';";
+        //false情况：Item的current state不对;container已经上船了; 船已经开走了; 公司关系
+        String sql="select loaded from container where code='"+containerCode+"';";
         try {
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
                 closeDB();
                 return false;
             }
-            if(resultSet.getBoolean(4)){
+            System.out.println(shipName+containerCode+"container loaded:"+resultSet.getBoolean(1));
+            if(resultSet.getBoolean(1)){
                 closeDB();
                 return false;
             }
-            sql="select sailing from ship where ship_name='"+shipName+"';";
+            sql="select sailing,company_name from ship where ship_name='"+shipName+"';";
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
                 closeDB();
                 return false;
             }
-            if(resultSet.getBoolean(3)){
+            if(resultSet.getBoolean(1)){
                 closeDB();
                 return false;
             }
-            sql="update item_info set state='WaitingForShipping',ship='"+shipName+"' where container_code='code';" +
-                    "update container set loaded=true;";//todo:此时item的state应该是PackingToContainer吧
+            String shipCompany=resultSet.getString(2);
+            sql="select state from item_info where container_code='"+containerCode+"' and company='"+shipCompany+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(!resultSet.getString(1).equals("PackingToContainer") ){
+                closeDB();
+                return false;
+            }
+            sql="select company from company_manager where name='"+log.name()+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(!shipCompany.equals(resultSet.getString(1))){
+                closeDB();
+                return false;
+            }
+            sql="update item_info set state='WaitingForShipping',ship='"+shipName+"' where container_code='"+containerCode+"' and company='"+shipCompany+"';" +
+                "update container set loaded=true where code='"+containerCode+"';";
+//                "update ship set sailing=true where ship_name='"+shipName+"';"
             statement.execute(sql);
+            System.out.println(shipName+"fxxk"+containerCode);
             return true;
         } catch (SQLException e) {
             System.out.println(e);
@@ -671,7 +702,7 @@ public class DBManipulation implements IDatabaseManipulation {
         if(!startDB(log))
             return false;
         //false情况：船已经开走了
-        String sql="select sailing from ship where ship_name='"+shipName+"';";
+        String sql="select sailing,company_name from ship where ship_name='"+shipName+"';";
         try {
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
@@ -679,6 +710,17 @@ public class DBManipulation implements IDatabaseManipulation {
                 return false;
             }
             if(resultSet.getBoolean(1)){
+                closeDB();
+                return false;
+            }
+            String shipCompany=resultSet.getString(2);
+            sql="select company from company_manager where name='"+log.name()+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next()){
+                closeDB();
+                return false;
+            }
+            if(!shipCompany.equals(resultSet.getString(1))){
                 closeDB();
                 return false;
             }
@@ -699,14 +741,27 @@ public class DBManipulation implements IDatabaseManipulation {
         if(!startDB(log))
             return false;
         //false情况：item的state不对
-        String sql="select state from item_info where name='"+itemName+"';";
+        String sql="select state,ship,company from item_info where name='"+itemName+"';";
         try {
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
                 closeDB();
                 return false;
             }
-            if(resultSet.getString(1)!="Shipping"){
+            if(!resultSet.getString(1).equals("Shipping")){
+                closeDB();
+                return false;
+            }
+            String shipName=resultSet.getString(2),itemCompany=resultSet.getString(3);
+            sql="select sailing from ship where ship_name='"+shipName+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || !resultSet.getBoolean(1)){
+                closeDB();
+                return false;
+            }
+            sql="select company from company_manager where name='"+log.name()+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || !itemCompany.equals(resultSet.getString(1))){
                 closeDB();
                 return false;
             }
@@ -726,14 +781,21 @@ public class DBManipulation implements IDatabaseManipulation {
         if(!startDB(log))
             return false;
         //false情况：item的state不对
-        String sql="select state from item_info where name='"+item+"';";
+        String sql="select state,company from item_info where name='"+item+"';";
         try {
             resultSet=statement.executeQuery(sql);
             if(!resultSet.next()){
                 closeDB();
                 return false;
             }
-            if(resultSet.getString(1)!="UnpackingFromContainer"){
+            if(!resultSet.getString(1).equals("UnpackingFromContainer")){
+                closeDB();
+                return false;
+            }
+            String itemCompany=resultSet.getString(2);
+            sql="select company from company_manager where name='"+log.name()+"';";
+            resultSet=statement.executeQuery(sql);
+            if(!resultSet.next() || !itemCompany.equals(resultSet.getString(1))){
                 closeDB();
                 return false;
             }
@@ -764,11 +826,11 @@ public class DBManipulation implements IDatabaseManipulation {
                 return null;
             }
             String city=resultSet.getString(1);
-            sql="select name from item_info where state='ExportChecking' and delivery_city='"+city+"';";
+            sql="select name from item_info where state='ExportChecking' and export_city='"+city+"';";
             resultSet=statement.executeQuery(sql);
             while(resultSet.next())
                 ans.add(resultSet.getString(1));
-            sql="select name from item_info where state='ImportChecking' and delivery_city='"+city+"';";
+            sql="select name from item_info where state='ImportChecking' and import_city='"+city+"';";
             resultSet=statement.executeQuery(sql);
             while(resultSet.next())
                 ans.add(resultSet.getString(1));
@@ -802,15 +864,15 @@ public class DBManipulation implements IDatabaseManipulation {
             }
             if(resultSet.getString(1).equals("ExportChecking") && resultSet.getString(2).equals(city)){
                 if(success)
-                    sql="update item_info set state='PackingToContainer',container_code='' where name='"+itemName+"';";
-                else sql="update item_info set state='ExportCheckFailed' where name='"+itemName+"';";
+                    sql="update item_info set state='PackingToContainer',container_code='',export_officer='"+log.name()+"' where name='"+itemName+"';";
+                else sql="update item_info set state='ExportCheckFailed',export_officer='"+log.name()+"' where name='"+itemName+"';";
                 statement.execute(sql);
                 return true;
             }
             if(resultSet.getString(1).equals("ImportChecking") && resultSet.getString(3).equals(city)){
                 if(success)
-                    sql="update item_info set state='FromImportTransporting',delivery_courier='' where name='"+itemName+"';";
-                else sql="update item_info set state='ImportCheckFailed' where name='"+itemName+"';";
+                    sql="update item_info set state='FromImportTransporting',delivery_courier='',import_officer='"+log.name()+"' where name='"+itemName+"';";
+                else sql="update item_info set state='ImportCheckFailed',import_officer='"+log.name()+"' where name='"+itemName+"';";
                 statement.execute(sql);
                 return true;
             }

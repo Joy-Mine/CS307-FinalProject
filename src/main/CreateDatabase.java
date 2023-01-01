@@ -70,16 +70,26 @@ public class CreateDatabase {
                 );""");
         ps.executeUpdate();
         ps=connection.prepareStatement("""
-                create table if not exists tax_rate(
+                create table if not exists import_tax_rate(
                     city_name text not null,
                     item_class text not null,
                     import_tax_rate numeric,
-                    export_tax_rate numeric,
                     primary key (city_name,item_class),
-                    constraint Export_officer_FK
+                    constraint Import_officer_FK
                         foreign key (city_name)
                             references city(name)
                 );""");
+        ps.executeUpdate();
+        ps=connection.prepareStatement("""
+                create table if not exists export_tax_rate(
+                      city_name text not null,
+                      item_class text not null,
+                      export_tax_rate numeric,
+                      primary key (city_name,item_class),
+                      constraint Export_officer_FK
+                          foreign key (city_name)
+                              references city(name)
+                  );""");
         ps.executeUpdate();
         ps=connection.prepareStatement("""
                 create table if not exists courier(
@@ -143,8 +153,8 @@ public class CreateDatabase {
                       class text not null ,
                       price numeric not null ,
                       state text,
-                      retrieval_courier text ,
                       retrieval_city text not null ,
+                      retrieval_courier text ,
                       constraint RetrievalCourier_FK
                           foreign key (retrieval_courier)
                               references courier(name) ,
